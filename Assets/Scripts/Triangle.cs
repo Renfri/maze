@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 public class Triangle : MonoBehaviour
 {
@@ -37,9 +38,19 @@ public class Triangle : MonoBehaviour
         */
 
     //public:
-    internal static uint leftLeg = 0;
-    internal static uint rightLeg = 1;
-    internal static uint triangleBase = 2;
+    public enum Drawing
+    {
+        NoDraw,
+        DrawBase,
+        DrawAll
+    }
+
+    public enum Direction
+    {
+        TriangleBase,
+        LeftLeg,
+        RightLeg
+    }
 
 
     public Triangle(
@@ -48,20 +59,33 @@ public class Triangle : MonoBehaviour
         Vector3 rotation,
         int level,
         int sector,
-        bool shouldBeDrawn)
+        Drawing shouldBeDrawn)
     {
         Initialize(wall, middle, rotation, level, sector, shouldBeDrawn);
 
-        if (ShouldBeDrawn)
+        if (ShouldBeDrawn != Drawing.NoDraw)
         {
-            Walls[0] = GetLeftLeg(wall, middle, rotation);
-            Walls[1] = GetRightLeg(wall, middle, rotation);
-            Walls[2] = GetTriangleBase(wall, middle, rotation);
+            if (ShouldBeDrawn == Drawing.DrawAll)
+            {
+                Walls[1] = GetLeftLeg(wall, middle, rotation);
+                Walls[2] = GetRightLeg(wall, middle, rotation);
+            }
+            Walls[0] = GetTriangleBase(wall, middle, rotation);
 
             HoldWalls();
         }
 
         SetTriangleOnRightPosition();
+    }
+
+    public Vector3 GetNeighbourPosition(
+        Direction direction)
+    {
+        int angle = ((int)Rotation.y + (int)direction * 120) % 360;
+        float x = Common.GetAxisCoordinate(wallWidth, angle, Mathf.Sin);
+        float z = Common.GetAxisCoordinate(wallWidth, angle, Mathf.Cos);
+
+        return new Vector3(x + Middle.x, 0.0f, z + Middle.z);
     }
 
     public void Delete()
@@ -165,7 +189,7 @@ public class Triangle : MonoBehaviour
         }
     }
 
-    public bool ShouldBeDrawn
+    public Drawing ShouldBeDrawn
     {
         get
         {
@@ -180,11 +204,6 @@ public class Triangle : MonoBehaviour
 
     //private:
     private GameObject holder = new GameObject();
-    /*
-     * [0] - leftLeg
-     * [1] - rightLeg
-     * [2] - base
-     */
     private Vector3 middle;
     private Vector3 rotation;
     private GameObject[] walls = new GameObject[3];
@@ -192,9 +211,9 @@ public class Triangle : MonoBehaviour
     private float wallWidth = 0;
     private int level;
     private int sector; // TODO: make enum from this
-    private bool shouldBeDrawn;
+    private Drawing shouldBeDrawn;
 
-    private void Initialize(GameObject wall, Vector3 middle, Vector3 rotation, int level, int sector, bool shouldBeDrawn)
+    private void Initialize(GameObject wall, Vector3 middle, Vector3 rotation, int level, int sector, Drawing shouldBeDrawn)
     {
         Debug.Assert(level >= 0);
         Debug.Assert(sector >= 0);
@@ -250,7 +269,10 @@ public class Triangle : MonoBehaviour
     {
         for (int i = 0; i < Walls.Length; i++)
         {
-            Walls[i].transform.parent = Holder.transform;
+            if (Walls[i] != null)
+            {
+                Walls[i].transform.parent = Holder.transform;
+            }
         }
     }
 

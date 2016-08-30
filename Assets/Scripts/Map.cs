@@ -6,10 +6,6 @@ using System;
 
 public class Map : MonoBehaviour
 {
-    Triangle[] Triangles;
-    Dictionary<Vector3, int> TrianglesIndices = new Dictionary<Vector3, int>();
-    int roundingHelper = 1000;
-
     // public:
     public Map(
         GameObject wall,
@@ -28,9 +24,11 @@ public class Map : MonoBehaviour
         Triangles = new Triangle[numberOfTriangles];
 
         int index = 0;
-        CreateMap(wall, index);
+        CreateMap(index);
 
-        Debug.Log("asd");
+        SetNeighbourhood();
+
+        Debug.Log("End of creation");
     }
 
     public GameObject Holder
@@ -59,8 +57,38 @@ public class Map : MonoBehaviour
         }
     }
 
+    public GameObject Wall
+    {
+        get
+        {
+            return wall;
+        }
+
+        set
+        {
+            wall = value;
+        }
+    }
+
+    public Triangle[] Triangles
+    {
+        get
+        {
+            return triangles;
+        }
+
+        set
+        {
+            triangles = value;
+        }
+    }
+
     //private:
+    public Triangle[] triangles;
+    private Dictionary<Vector3, int> trianglesIndices = new Dictionary<Vector3, int>();
+    private int roundingHelper = 1000;
     private GameObject holder = new GameObject();
+    private GameObject wall;
     private Vector3 middle;
     private float wallWidth;
     private uint mazeSize;
@@ -71,207 +99,139 @@ public class Map : MonoBehaviour
         Holder.name = "Map";
         Middle = middle;
         mazeSize = size;
+        Wall = wall;
     }
 
     private void CreateMap(
-        GameObject wall,
         int index)
     {
         Queue<Triangle> triangleQueue = new Queue<Triangle>();
 
-        CreateFirstLevelOfTriangles(wall, triangleQueue, ref index);
+        CreateFirstLevelOfTriangles(triangleQueue, ref index);
 
         //common
         Triangle currentTriangle;
         int yRotation;
+        int neighbourYRotation;
 
         //single triangle
-        Vector3 triangleMiddle;
-        Vector3 roundedMiddle;
-        Vector3 triangleRotation;
-        float x;
-        float z;
+        Triangle.Drawing shouldBeDrawn;
+        Vector3 neighbourPosition;
 
         while (triangleQueue.Count > 0)
         {
             currentTriangle = triangleQueue.Dequeue();
             Debug.Assert(currentTriangle, "Triangle doesn't exist");
             yRotation = (int)Mathf.Round(currentTriangle.Rotation.y);
+            neighbourYRotation = (yRotation + 180) % 360;
+            shouldBeDrawn = currentTriangle.ShouldBeDrawn == Triangle.Drawing.DrawAll ? Triangle.Drawing.NoDraw : Triangle.Drawing.DrawAll;
 
-            if(yRotation == (int)Mathf.Round(currentTriangle.Sector * 60.0f))
+            if (yRotation == (int)Mathf.Round(currentTriangle.Sector * 60.0f))
             {
                 if (currentTriangle.Level >= mazeSize)
                 {
                     continue;
                 }
 
-                x = wallWidth * Mathf.Sqrt(3) * -Mathf.Sin(yRotation / 180.0f * Mathf.PI) / 3.0f; // TODO: needed refactoring - maybe lambda?
-                z = wallWidth * Mathf.Sqrt(3) * -Mathf.Cos(yRotation / 180.0f * Mathf.PI) / 3.0f; // TODO: needed refactoring - maybe lambda?
-                yRotation = (yRotation + 180) % 360;
-
-                triangleMiddle = new Vector3(x, 0.0f, z) + currentTriangle.Middle;                // TODO: needed refactoring - MakeTriangle function
-                triangleRotation = new Vector3(0.0f, yRotation, 0.0f);
-
-                Triangles[index] = new Triangle(wall, triangleMiddle, triangleRotation, currentTriangle.Level + 1, currentTriangle.Sector, !currentTriangle.ShouldBeDrawn);
-                triangleQueue.Enqueue(Triangles[index]);
-
-                roundedMiddle = new Vector3(Mathf.Round(triangleMiddle.x * roundingHelper), 0.0f, Mathf.Round(triangleMiddle.z * roundingHelper));
-                TrianglesIndices.Add(roundedMiddle, index++);
+                neighbourPosition = currentTriangle.GetNeighbourPosition(Triangle.Direction.TriangleBase);
+                MakeTriangle(triangleQueue, neighbourPosition, neighbourYRotation, currentTriangle.Level + 1, currentTriangle.Sector, shouldBeDrawn, ref index);
             }
             else
             {
-                // 1
-                x = wallWidth * Mathf.Sqrt(3) * -Mathf.Sin((yRotation + 120) / 180.0f * Mathf.PI) / 3.0f; // TODO: needed refactoring - maybe lambda?
-                z = wallWidth * Mathf.Sqrt(3) * -Mathf.Cos((yRotation + 120) / 180.0f * Mathf.PI) / 3.0f; // TODO: needed refactoring - maybe lambda?
-                yRotation = (yRotation + 180) % 360;
-                triangleMiddle = new Vector3(x, 0.0f, z) + currentTriangle.Middle;                // TODO: needed refactoring - MakeTriangle function
-
-                roundedMiddle = new Vector3(Mathf.Round(triangleMiddle.x * roundingHelper), 0.0f, Mathf.Round(triangleMiddle.z * roundingHelper));
-
-                if (!TrianglesIndices.ContainsKey(roundedMiddle))
+                if (currentTriangle.Level == mazeSize)
                 {
-                    triangleRotation = new Vector3(0.0f, yRotation, 0.0f);
-
-                    Triangles[index] = new Triangle(wall, triangleMiddle, triangleRotation, currentTriangle.Level, currentTriangle.Sector, !currentTriangle.ShouldBeDrawn);
-                    triangleQueue.Enqueue(Triangles[index]);
-
-                    TrianglesIndices.Add(roundedMiddle, index++);
-                }
-                else
-                {
-                    Debug.Log("No chyba kpisz");
+                    shouldBeDrawn = yRotation % 120 == 0 ? Triangle.Drawing.DrawBase : Triangle.Drawing.DrawAll;
                 }
 
-                // 2
-                x = wallWidth * Mathf.Sqrt(3) * -Mathf.Sin((yRotation + 60) / 180.0f * Mathf.PI) / 3.0f; // TODO: needed refactoring - maybe lambda?
-                z = wallWidth * Mathf.Sqrt(3) * -Mathf.Cos((yRotation + 60) / 180.0f * Mathf.PI) / 3.0f; // TODO: needed refactoring - maybe lambda?
-                triangleMiddle = new Vector3(x, 0.0f, z) + currentTriangle.Middle;                // TODO: needed refactoring - MakeTriangle function
+                neighbourPosition = currentTriangle.GetNeighbourPosition(Triangle.Direction.LeftLeg);
+                MakeTriangle(triangleQueue, neighbourPosition, neighbourYRotation, currentTriangle.Level, currentTriangle.Sector, shouldBeDrawn, ref index);
 
-                roundedMiddle = new Vector3(Mathf.Round(triangleMiddle.x * roundingHelper), 0.0f, Mathf.Round(triangleMiddle.z * roundingHelper));
-                
-                triangleRotation = new Vector3(0.0f, yRotation, 0.0f);
-
-                Triangles[index] = new Triangle(wall, triangleMiddle, triangleRotation, currentTriangle.Level, currentTriangle.Sector, !currentTriangle.ShouldBeDrawn);
-                triangleQueue.Enqueue(Triangles[index]);
-
-                TrianglesIndices.Add(roundedMiddle, index++);
-                
+                neighbourPosition = currentTriangle.GetNeighbourPosition(Triangle.Direction.RightLeg);
+                MakeTriangle(triangleQueue, neighbourPosition, neighbourYRotation, currentTriangle.Level, currentTriangle.Sector, shouldBeDrawn, ref index);
             }
         }
     }
 
     private void CreateFirstLevelOfTriangles(
-        GameObject wall,
         Queue<Triangle> triangleQueue,
         ref int index)
     {
-        index = 0;
-
+        float x, z;
         Vector3 triangleMiddle;
-        Vector3 roundedMiddle;
-        Vector3 triangleRotation;
         int level = 1;
         int sector;
-        bool shouldBeDrawn;
-        float x;
-        float z;
+        Triangle.Drawing shouldBeDrawn;
 
         for (int i = 0; i < 6; i++)
         {
-            x = wallWidth * Mathf.Sqrt(3) * -Mathf.Sin(i * 60.0f / 180.0f * Mathf.PI)  / 3.0f; // TODO: needed refactoring - maybe lambda?
-            z = wallWidth * Mathf.Sqrt(3) * -Mathf.Cos(i * 60.0f / 180.0f * Mathf.PI)  / 3.0f; // TODO: needed refactoring - maybe lambda?
+            x = Common.GetAxisCoordinate(wallWidth, i * 60, Mathf.Sin);
+            z = Common.GetAxisCoordinate(wallWidth, i * 60, Mathf.Cos);
+            triangleMiddle = new Vector3(x + Middle.x, 0.0f, z + Middle.z);
 
-            triangleMiddle = new Vector3(x, 0.0f, z) + Middle;                                 // TODO: needed refactoring - MakeTriangle function
-            triangleRotation = new Vector3(0.0f, i * 60.0f, 0.0f);
             sector = i;
-            shouldBeDrawn = (i % 2) == 0;
-            
-            Triangles[index] = new Triangle(wall, triangleMiddle, triangleRotation, level, sector, shouldBeDrawn);
+            shouldBeDrawn = (i % 2) == 0 ? Triangle.Drawing.DrawAll : Triangle.Drawing.NoDraw;
 
-            triangleQueue.Enqueue(Triangles[index]);
-
-            roundedMiddle = new Vector3(Mathf.Round(x * roundingHelper), 0.0f, Mathf.Round(z * roundingHelper));
-            TrianglesIndices.Add(roundedMiddle, index++);
+            MakeTriangle(triangleQueue, triangleMiddle, i * 60.0f, level, sector, shouldBeDrawn, ref index);
         }
     }
 
-}
-
-
-/*int numberOfHexagones = 1;
-for (int i = 0; i < size; i++)
-{
-    numberOfHexagones += 6 * i;
-}
-Hexagones = new Hexagon[numberOfHexagones];
-
-Hexagones[0] = new Hexagon(wall, middle, new Vector3(0.0f, 0.0f, 0.0f));
-HexagonesIndices.Add(new Vector3(0.0f, 0.0f, 0.0f), 0);
-
-Queue<Hexagon> queue = new Queue<Hexagon>();
-queue.Enqueue(Hexagones[0]);
-
-CreateMap(wall, queue, 1, numberOfHexagones, 2);
-if (mazeSize > 2)
-{
-    CutOffUnnecessaryTriangles();
-}*/
-
-/*private void CreateMap(
-    GameObject wall,
-    Queue<Hexagon> currentLevelQueue,
-    int index,
-    int maxSize,
-    int levelNumber)
-{
-    if (levelNumber > mazeSize)
+    private void MakeTriangle(
+        Queue<Triangle> triangleQueue,
+        Vector3 triangleMiddle,
+        float yRotation,
+        int level,
+        int sector,
+        Triangle.Drawing shouldBeDrawn,
+        ref int index)
     {
-        return;
-    }
+        Vector3 roundedMiddle = new Vector3(Mathf.Round(triangleMiddle.x * roundingHelper), 0.0f, Mathf.Round(triangleMiddle.z * roundingHelper));
 
-    Queue<Hexagon> nextLevelQueue = new Queue<Hexagon>();
-
-    foreach (Hexagon hex in currentLevelQueue)
-    {
-        for (int i = 0; i < maxNeighboursOfHexagon; i++)
+        if (!trianglesIndices.ContainsKey(roundedMiddle))
         {
-            float z = hex.Middle.z + wallWidth * Mathf.Sqrt(3) * Mathf.Cos(i * 60.0f / 180.0f * Mathf.PI);
-            float x = hex.Middle.x + wallWidth * Mathf.Sqrt(3) * Mathf.Sin(i * 60.0f / 180.0f * Mathf.PI);
-            Vector3 roundedMiddle = new Vector3(Mathf.Round(x * roundingHelper), 0.0f, Mathf.Round(z * roundingHelper));
-            if (!HexagonesIndices.ContainsKey(roundedMiddle))
-            {
-                Debug.Assert(index < maxSize, "index is out of range");
-                Hexagones[index] = new Hexagon(wall, new Vector3(x, 0.0f, z), new Vector3(0.0f, 0.0f, 0.0f));
-                nextLevelQueue.Enqueue(Hexagones[index]);
-                HexagonesIndices.Add(roundedMiddle, index++);
-                // TODO: ustaw sasiedztwo dla triangleBases
-            }
-            else
-            {
-                // TODO: ustaw sasiedztwo dla triangleBases
-            }
+            Vector3 triangleRotation = new Vector3(0.0f, yRotation, 0.0f);
+
+            Triangles[index] = new Triangle(Wall, triangleMiddle, triangleRotation, level, sector, shouldBeDrawn);
+            trianglesIndices.Add(roundedMiddle, index);
+            triangleQueue.Enqueue(Triangles[index++]);
         }
-    }
-
-    currentLevelQueue.Clear();
-
-    CreateMap(wall, nextLevelQueue, index, maxSize, ++levelNumber);
-}
-
-private void CutOffUnnecessaryTriangles()
-{
-    // TODO: Cut off jest zle zrobiony, poprawny dla mazeSize = 3, dla wyzszych usuwamy caly
-    for (int i = 0; i < maxNeighboursOfHexagon; i++)
-    {
-        float z = (mazeSize - 1) * wallWidth * Mathf.Sqrt(3) * Mathf.Cos(i * 60.0f / 180.0f * Mathf.PI);
-        float x = (mazeSize - 1) * wallWidth * Mathf.Sqrt(3) * Mathf.Sin(i * 60.0f / 180.0f * Mathf.PI);
-        Vector3 roundedMiddle = new Vector3(Mathf.Round(x * roundingHelper), 0.0f, Mathf.Round(z * roundingHelper));
-        if (HexagonesIndices.ContainsKey(roundedMiddle))
+        else
         {
-            Hexagones[HexagonesIndices[roundedMiddle]].DeletePartOfHexagon(new int[3] { (i + 2) % 6, (i + 3) % 6, (i + 4) % 6 });
+            Debug.Log("Triangle already exists");
         }
     }
 
+    private int GetTriangleIndex(
+        Vector3 position)
+    {
+        Vector3 roundedMiddle = new Vector3(Mathf.Round(position.x * roundingHelper), 0.0f, Mathf.Round(position.z * roundingHelper));
+        return trianglesIndices.ContainsKey(roundedMiddle) ? trianglesIndices[roundedMiddle] : - 1;
+    }
 
+    private void SetNeighbourhood()
+    {
+        Vector3 neighbourPosition;
+        int neighbourIndex;
+        Debug.Assert(Triangles[0], "Triangles don't exist.");
+        int numberOfNeighbours = Triangles[0].Neighbours.Length;
+        //GameObject neighbour; // TODO: delete
+        //int j = 0; // TODO: delete
 
-}*/
+        foreach (Triangle currentTriangle in Triangles)
+        {
+            for (int i = 0; i < numberOfNeighbours; i++)
+            {
+                neighbourPosition = currentTriangle.GetNeighbourPosition((Triangle.Direction)i);
+                neighbourIndex = GetTriangleIndex(neighbourPosition);
+                if(neighbourIndex >= 0)
+                {
+                    //neighbour = new GameObject(); // TODO: delete
+                    //neighbour.transform.position = neighbourPosition; // TODO: delete
+                    //neighbour.name = "Neighbour" + j; // TODO: delete
+                    currentTriangle.Neighbours[i] = Triangles[neighbourIndex];
+                }
+
+            }
+            //j++; // TODO: delete
+        }
+    }
+}
