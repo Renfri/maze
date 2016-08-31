@@ -1,13 +1,11 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System;
 
 public class Map : MonoBehaviour
 {
     // public:
-    public Map(
+    public void InitializeMap(
         GameObject wall,
         Vector3 middle,
         uint mazeSize)
@@ -16,32 +14,21 @@ public class Map : MonoBehaviour
 
         Debug.Assert(mazeSize > 0, "mazeSize is out of range");
 
-        int numberOfTriangles = 6;
-        for (int i = 0; i < mazeSize; i++)
-        {
-            numberOfTriangles += 6 * (2 * i + 1);
-        }
-        Triangles = new Triangle[numberOfTriangles];
+        Triangles = new List<Triangle>();
 
         int index = 0;
         CreateMap(index);
-
         SetNeighbourhood();
+
+        CreateMaze();
 
         Debug.Log("End of creation");
     }
 
-    public GameObject Holder
-    {
-        get
-        {
-            return holder;
-        }
 
-        set
-        {
-            holder = value;
-        }
+    void Start()
+    {
+
     }
 
     public Vector3 Middle
@@ -70,7 +57,7 @@ public class Map : MonoBehaviour
         }
     }
 
-    public Triangle[] Triangles
+    public List<Triangle> Triangles
     {
         get
         {
@@ -84,10 +71,9 @@ public class Map : MonoBehaviour
     }
 
     //private:
-    public Triangle[] triangles;
+    private List<Triangle> triangles;
     private Dictionary<Vector3, int> trianglesIndices = new Dictionary<Vector3, int>();
     private int roundingHelper = 1000;
-    private GameObject holder = new GameObject();
     private GameObject wall;
     private Vector3 middle;
     private float wallWidth;
@@ -96,7 +82,7 @@ public class Map : MonoBehaviour
     private void Initialize(GameObject wall, Vector3 middle, uint size)
     {
         wallWidth = wall.transform.lossyScale.z;
-        Holder.name = "Map";
+        gameObject.name = "Map";
         Middle = middle;
         mazeSize = size;
         Wall = wall;
@@ -189,8 +175,11 @@ public class Map : MonoBehaviour
         if (!trianglesIndices.ContainsKey(roundedMiddle))
         {
             Vector3 triangleRotation = new Vector3(0.0f, yRotation, 0.0f);
-
-            Triangles[index] = new Triangle(Wall, triangleMiddle, triangleRotation, level, sector, shouldBeDrawn);
+            GameObject newGameObject = new GameObject();
+            Triangle newTriangle = newGameObject.AddComponent<Triangle>() as Triangle;
+            newTriangle.InitializeTriangle(Wall, triangleMiddle, triangleRotation, level, sector, shouldBeDrawn);
+            newTriangle.transform.parent = gameObject.transform;
+            Triangles.Add(newTriangle);
             trianglesIndices.Add(roundedMiddle, index);
             triangleQueue.Enqueue(Triangles[index++]);
         }
@@ -229,9 +218,42 @@ public class Map : MonoBehaviour
                     //neighbour.name = "Neighbour" + j; // TODO: delete
                     currentTriangle.Neighbours[i] = Triangles[neighbourIndex];
                 }
+            }
 
+            if (currentTriangle.ShouldBeDrawn != Triangle.Drawing.DrawAll)
+            {
+                currentTriangle.SetRefToWalls();
             }
             //j++; // TODO: delete
         }
     }
+
+    private void CreateMaze()
+    {
+        System.Random rnd = new System.Random();
+        Stack<Triangle> lastCells = new Stack<Triangle>();
+
+        int randomIndex = UnityEngine.Random.Range(0, Triangles.Count);
+        Triangle currentCell = Triangles[randomIndex];
+        Triangle neighbour;
+        currentCell.Visited = true;
+
+        do
+        {
+            neighbour = currentCell.GetRandomNeighbourAndDeleteWall();
+            if (neighbour)
+            {
+                lastCells.Push(currentCell);
+                currentCell = neighbour;
+                currentCell.Visited = true;
+            }
+            else
+            {
+                currentCell.IsDeadEnd = true;
+                currentCell = lastCells.Pop();
+            }
+        } while (lastCells.Count > 0);
+    }
+
+
 }

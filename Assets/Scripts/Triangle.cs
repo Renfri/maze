@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using System.Collections.Generic;
 
 public class Triangle : MonoBehaviour
 {
@@ -52,8 +53,7 @@ public class Triangle : MonoBehaviour
         RightLeg
     }
 
-
-    public Triangle(
+    public void InitializeTriangle(
         GameObject wall,
         Vector3 middle,
         Vector3 rotation,
@@ -78,6 +78,40 @@ public class Triangle : MonoBehaviour
         SetTriangleOnRightPosition();
     }
 
+    public void SetRefToWalls()
+    {
+        Debug.Assert(ShouldBeDrawn != Drawing.DrawAll, "Wrong usage of SetRefToWalls");
+        if(Neighbours[(int)Direction.LeftLeg] != null)
+        {
+            Debug.Assert(Neighbours[(int)Direction.LeftLeg].Walls[(int)Direction.RightLeg], "Wrong usage of SetRefToWalls");
+            if(Sector == Neighbours[(int)Direction.LeftLeg].Sector)
+            {
+                Walls[(int)Direction.LeftLeg] = Neighbours[(int)Direction.LeftLeg].Walls[(int)Direction.LeftLeg];
+            }
+            else
+            {
+                Walls[(int)Direction.LeftLeg] = Neighbours[(int)Direction.LeftLeg].Walls[(int)Direction.RightLeg];
+            }
+        }
+        if (Neighbours[(int)Direction.RightLeg] != null)
+        {
+            Debug.Assert(Neighbours[(int)Direction.RightLeg].Walls[(int)Direction.LeftLeg], "Wrong usage of SetRefToWalls");
+            if (Sector == Neighbours[(int)Direction.RightLeg].Sector)
+            {
+                Walls[(int)Direction.RightLeg] = Neighbours[(int)Direction.RightLeg].Walls[(int)Direction.RightLeg];
+            }
+            else
+            {
+                Walls[(int)Direction.RightLeg] = Neighbours[(int)Direction.RightLeg].Walls[(int)Direction.LeftLeg];
+            }
+        }
+        if (Neighbours[(int)Direction.TriangleBase] != null)
+        {
+            Debug.Assert(Neighbours[(int)Direction.TriangleBase].Walls[(int)Direction.TriangleBase], "Wrong usage of SetRefToWalls");
+            Walls[(int)Direction.TriangleBase] = Neighbours[(int)Direction.TriangleBase].Walls[(int)Direction.TriangleBase];
+        }
+    }
+
     public Vector3 GetNeighbourPosition(
         Direction direction)
     {
@@ -88,26 +122,35 @@ public class Triangle : MonoBehaviour
         return new Vector3(x + Middle.x, 0.0f, z + Middle.z);
     }
 
+    public Triangle GetRandomNeighbourAndDeleteWall()
+    {
+        Triangle neighbour = null;
+        HashSet<int> randomNeighbourIndexes = new HashSet<int>();
+        while (randomNeighbourIndexes.Count < Neighbours.Length)
+        {
+            randomNeighbourIndexes.Add(UnityEngine.Random.Range(0, Neighbours.Length));
+        }
+
+        foreach (int i in randomNeighbourIndexes)
+        {
+            if (Neighbours[i] && !Neighbours[i].Visited)
+            {
+                neighbour = Neighbours[i];
+                Debug.Assert(Walls[i]);
+                Destroy(Walls[i]);
+                break;
+            }
+
+        }
+
+        return neighbour;
+    }
+
     public void Delete()
     {
         foreach (GameObject wall in Walls)
         {
             DestroyObject(wall, 0.0f);
-        }
-
-        DestroyObject(Holder, 0.0f);
-    }
-
-    public GameObject Holder
-    {
-        get
-        {
-            return holder;
-        }
-
-        set
-        {
-            holder = value;
         }
     }
 
@@ -202,8 +245,33 @@ public class Triangle : MonoBehaviour
         }
     }
 
+    public bool Visited
+    {
+        get
+        {
+            return visited;
+        }
+
+        set
+        {
+            visited = value;
+        }
+    }
+
+    public bool IsDeadEnd
+    {
+        get
+        {
+            return isDeadEnd;
+        }
+
+        set
+        {
+            isDeadEnd = value;
+        }
+    }
+
     //private:
-    private GameObject holder = new GameObject();
     private Vector3 middle;
     private Vector3 rotation;
     private GameObject[] walls = new GameObject[3];
@@ -212,18 +280,22 @@ public class Triangle : MonoBehaviour
     private int level;
     private int sector; // TODO: make enum from this
     private Drawing shouldBeDrawn;
+    private bool visited;
+    private bool isDeadEnd;
 
     private void Initialize(GameObject wall, Vector3 middle, Vector3 rotation, int level, int sector, Drawing shouldBeDrawn)
     {
         Debug.Assert(level >= 0);
         Debug.Assert(sector >= 0);
         wallWidth = wall.transform.lossyScale.z;
-        Holder.name = "Triangle";
+        gameObject.name = "Triangle";
         Middle = middle;
         Rotation = rotation;
         Level = level;
         Sector = sector;
         ShouldBeDrawn = shouldBeDrawn;
+        visited = false;
+        IsDeadEnd = false;
     }
 
     private GameObject GetLeftLeg(
@@ -271,14 +343,14 @@ public class Triangle : MonoBehaviour
         {
             if (Walls[i] != null)
             {
-                Walls[i].transform.parent = Holder.transform;
+                Walls[i].transform.parent = gameObject.transform;
             }
         }
     }
 
     private void SetTriangleOnRightPosition()
     {
-        Holder.transform.position = Middle;
-        Holder.transform.Rotate(Rotation);
+        gameObject.transform.position = Middle;
+        gameObject.transform.Rotate(Rotation);
     }
 }

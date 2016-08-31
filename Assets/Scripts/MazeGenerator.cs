@@ -10,9 +10,9 @@ public class MazeGenerator : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        
-        new Map(wall, new Vector3(0.0f, 0.0f, 0.0f), mazeSize);
-	}
+        Map map = gameObject.AddComponent<Map>() as Map;
+        map.InitializeMap(wall, new Vector3(0.0f, 0.0f, 0.0f), mazeSize);
+    }
 	
 	// Update is called once per frame
 	void Update () {
