@@ -25,12 +25,6 @@ public class Map : MonoBehaviour
         Debug.Log("End of creation");
     }
 
-
-    void Start()
-    {
-
-    }
-
     public Vector3 Middle
     {
         get
@@ -230,7 +224,6 @@ public class Map : MonoBehaviour
 
     private void CreateMaze()
     {
-        System.Random rnd = new System.Random();
         Stack<Triangle> lastCells = new Stack<Triangle>();
 
         int randomIndex = UnityEngine.Random.Range(0, Triangles.Count);
