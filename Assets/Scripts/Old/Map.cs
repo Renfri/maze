@@ -25,6 +25,12 @@ public class Map : MonoBehaviour
         Debug.Log("End of creation");
     }
 
+
+    void Start()
+    {
+
+    }
+
     public Vector3 Middle
     {
         get
@@ -242,7 +248,7 @@ public class Map : MonoBehaviour
             }
             else
             {
-                currentCell.IsDeadEnd = true;
+                currentCell.IsDeadEnd = true; // TODO: pierwsza komorka sie nie liczy
                 currentCell = lastCells.Pop();
             }
         } while (lastCells.Count > 0);

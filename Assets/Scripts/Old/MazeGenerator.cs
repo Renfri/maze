@@ -18,5 +18,12 @@ public class MazeGenerator : MonoBehaviour {
 	void Update () {
 	
 	}
+
+    void GenerateMap(Vector3 middle, int size)
+    {
+        // bottomTriangle
+        
+    }
+
     
 }
