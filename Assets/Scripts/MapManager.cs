@@ -122,7 +122,7 @@ public class MapManager : MonoBehaviour {
         return map;
     }
 
-    // TODO: maybe change to limit the longest path insted randomly make loops
+    // TODO: maybe, we can limit the longest path insted randomly make loops
     private Dictionary<IntVector2, VirtualCell> MakeLoops(Dictionary<IntVector2, VirtualCell> map)
     {
         List<IntVector2> potentialNeighbours;
@@ -132,7 +132,9 @@ public class MapManager : MonoBehaviour {
 
         foreach (KeyValuePair<IntVector2, VirtualCell> currentCell in map)
         {
-            if ((currentCell.Value.Position.x % 2 == 0) && (currentCell.Value.Position.y % 2 == 0))
+            if (currentCell.Value.Type == VirtualCell.CellType.FIELD &&
+                currentCell.Value.Position.x % 2 == 0 && 
+                currentCell.Value.Position.y % 2 == 0)
             {
                 potentialNeighbours = currentCell.Value.GetRandomlyPotentialIndirectNeighbours();
                 for (int i = 0; i < potentialNeighbours.Count; i++)
@@ -143,11 +145,21 @@ public class MapManager : MonoBehaviour {
                         middleCellPosition = currentCell.Value.Position + (neighbour.Position - currentCell.Value.Position) / 2;
                         if (map.ContainsKey(middleCellPosition))
                         {
-                            if (UnityEngine.Random.value <= frequencyOfMakingLoops)
+                            middleCell = map[middleCellPosition];
+                            if (middleCell.Type == VirtualCell.CellType.WALL)
                             {
-                                middleCell = map[middleCellPosition];
-                                middleCell.Type = VirtualCell.CellType.FIELD;
-                                middleCell.IsVisited = true;
+                                
+                                if (UnityEngine.Random.value <= frequencyOfMakingLoops)
+                                {
+
+                                    middleCell.Type = VirtualCell.CellType.FIELD;
+                                    middleCell.IsVisited = true;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                continue;
                             }
                         }
                         else
@@ -155,7 +167,6 @@ public class MapManager : MonoBehaviour {
                             Debug.Assert(false, "Cell does not exist");
                             //Debug.Break();
                         }
-                        break;
                     }
                 }
             }
@@ -190,15 +201,28 @@ public class MapManager : MonoBehaviour {
             list[4].y = currentCell.Value.Position.y - 1;
             list[5].y = list[4].y;
 
+            //if (UnityEngine.Mathf.Abs(currentCell.Value.Position.x) == 2 * size - 1 ||
+            //    UnityEngine.Mathf.Abs(currentCell.Value.Position.y) == 2 * size - 1 ||
+            //    UnityEngine.Mathf.Abs(currentCell.Value.Position.x) + UnityEngine.Mathf.Abs(currentCell.Value.Position.y) == 2 * size - 1)
+            //{
+            //    continue;
+            //}
+
             for (int i = 0; i < list.Count; i++)
             {
-                if (map.ContainsKey(list[i]) && map[list[i]].Type == VirtualCell.CellType.FIELD)
+                if (map.ContainsKey(list[i]) && map[list[i]].Type == currentCell.Value.Type)
                 {
+                    //if (UnityEngine.Mathf.Abs(map[list[i]].Position.x) == 2 * size - 1 ||
+                    //    UnityEngine.Mathf.Abs(map[list[i]].Position.y) == 2 * size - 1 ||
+                    //    UnityEngine.Mathf.Abs(map[list[i]].Position.x) + UnityEngine.Mathf.Abs(currentCell.Value.Position.y) == 2 * size - 1)
+                    //{
+                    //    continue;
+                    //}
                     currentCell.Value.Neighbours.Add(map[list[i]]);
                 }
             }
 
-            if(currentCell.Value.Neighbours.Count == 1)
+            if(currentCell.Value.Neighbours.Count == 1 && currentCell.Value.Type == VirtualCell.CellType.FIELD)
             {
                 currentCell.Value.IsDeadEnd = true;
             }
@@ -214,6 +238,7 @@ public class MapManager : MonoBehaviour {
         HashSet<IntVector2> randomIndices = new HashSet<IntVector2>();
         int randomIndexX, randomIndexY;
         IntVector2 randomPosition;
+        List<VirtualCell> randomListOfNeighbours;
         //bool shouldBeNeutral = false; // TODO: doesn't work, needed region variable in VirtualCell
 
         for (int i = 0; i < randomPointsForEachTheme * (int)VirtualCell.FieldType.COUNT; i++)
@@ -231,7 +256,7 @@ public class MapManager : MonoBehaviour {
 
             lastCells[i].Enqueue(map[randomPosition]);
             map[randomPosition].IsVisited = true;
-            map[randomPosition].TypeOfField = (VirtualCell.FieldType)(i % (int)VirtualCell.FieldType.COUNT);
+            map[randomPosition].TypeOfField = (VirtualCell.FieldType)UnityEngine.Random.Range(0, (int)VirtualCell.FieldType.COUNT);
         }
 
         while (lastCells.Count > 0)
@@ -245,12 +270,26 @@ public class MapManager : MonoBehaviour {
                 }
 
                 currentCell = lastCells[i].Dequeue();
-                foreach (VirtualCell neighbour in currentCell.Neighbours) // TODO: randomly add neighbours to queue
+                randomListOfNeighbours = currentCell.GetRandomlyNeighbours();
+                foreach (VirtualCell neighbour in randomListOfNeighbours)
                 {
                     //shouldBeNeutral = false; // TODO: doesn't work, needed region variable in VirtualCell
 
                     if (!neighbour.IsVisited)
                     {
+                        foreach (VirtualCell neighbourOfNeighbour in neighbour.Neighbours)
+                        {
+                            if(neighbourOfNeighbour != currentCell)
+                            {
+                                if (currentCell.TypeOfField == neighbourOfNeighbour.TypeOfField)
+                                {
+                                    do
+                                    {
+                                        neighbour.TypeOfField = (VirtualCell.FieldType)UnityEngine.Random.Range(0, (int)VirtualCell.FieldType.COUNT);
+                                    } while (neighbour.TypeOfField == currentCell.TypeOfField);
+                                }
+                            }
+                        }
                         lastCells[i].Enqueue(neighbour);
                         neighbour.TypeOfField = currentCell.TypeOfField;
                         neighbour.IsVisited = true;
@@ -289,23 +328,12 @@ public class MapManager : MonoBehaviour {
             switch (currentCell.Type)
             {
                 case VirtualCell.CellType.WALL: // TODO: Change to resources
-                    choosenPrefab = prefabs[prefabs.Length - 1];
+                    choosenPrefab = prefabs[prefabs.Length - 1]; // SIMPLE WALL
                     break;
                 case VirtualCell.CellType.FIELD:
-                    if (!currentCell.IsDeadEnd)
+                    if ((int)currentCell.TypeOfField < (int)VirtualCell.FieldType.COUNT)
                     {
-                        if ((int)currentCell.TypeOfField < (int)VirtualCell.FieldType.COUNT)
-                        {
-                            choosenPrefab = prefabs[(int)currentCell.TypeOfField];
-                        }
-                        else
-                        {
-                            choosenPrefab = prefabs[prefabs.Length - 3]; // NEUTRAL
-                        }
-                    }
-                    else
-                    {
-                        choosenPrefab = prefabs[prefabs.Length - 2];
+                        choosenPrefab = prefabs[(int)currentCell.TypeOfField];
                     }
                     break;
                 default:

@@ -16,8 +16,10 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
         RED,
         GREEN,
         NEUTRAL,
-        COUNT,
         YELLOW,
+        PINK,
+        ORANGE,
+        COUNT,
         NONE,
     }
 
@@ -45,6 +47,24 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
         List<IntVector2> randomList = new List<IntVector2>();
 
         while(list.Count > 0)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, list.Count);
+            randomList.Add(list[randomIndex]);
+            list.RemoveAt(randomIndex);
+        }
+        return randomList;
+    }
+
+    public List<VirtualCell> GetRandomlyNeighbours()
+    {
+        List<VirtualCell> list = new List<VirtualCell>();
+        for (int i = 0; i < neighbours.Count; i++)
+        {
+            list.Add(neighbours[i]);
+        }
+        List<VirtualCell> randomList = new List<VirtualCell>();
+
+        while (list.Count > 0)
         {
             int randomIndex = UnityEngine.Random.Range(0, list.Count);
             randomList.Add(list[randomIndex]);
