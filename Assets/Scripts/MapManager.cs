@@ -11,6 +11,7 @@ public class MapManager : MonoBehaviour {
     public int size;
     public int randomPointsForEachTheme;
     public float frequencyOfMakingLoops;
+    public float HeightScale= 0.2f;
 
     private List<GameObject> hexagones = new List<GameObject>(); // TODO: delete hexagones in the future, temporary variable
 
@@ -26,12 +27,11 @@ public class MapManager : MonoBehaviour {
 
     private Dictionary<IntVector2, VirtualCell> AddHeights(Dictionary<IntVector2, VirtualCell> map)
     {
-        var scale = 0.3f;
         foreach (var cell in map)
         {
             if(!(cell.Value.TypeOfField == VirtualCell.FieldType.NONE))
             {
-                cell.Value.Height = (Mathf.PerlinNoise((float)cell.Key.x * scale, (float)cell.Key.y * scale) * 2);
+                cell.Value.Height = (Mathf.PerlinNoise(cell.Key.x * HeightScale, cell.Key.y * HeightScale));
             }
             else
             {
