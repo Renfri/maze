@@ -20,8 +20,26 @@ public class MapManager : MonoBehaviour {
         map = MakeLoops(map);
         map = SetNeighbourhoodAndDeadEnds(map);
         map = CreatePaths(map);
+        map = AddHeights(map);
         createScene();
 	}
+
+    private Dictionary<IntVector2, VirtualCell> AddHeights(Dictionary<IntVector2, VirtualCell> map)
+    {
+        var scale = 0.3f;
+        foreach (var cell in map)
+        {
+            if(!(cell.Value.TypeOfField == VirtualCell.FieldType.NONE))
+            {
+                cell.Value.Height = (Mathf.PerlinNoise((float)cell.Key.x * scale, (float)cell.Key.y * scale) * 2);
+            }
+            else
+            {
+                cell.Value.Height = 0;
+            }
+        }
+        return map;
+    }
 
     // Creates simple big hexagon from small hexagones
     private Dictionary<IntVector2, VirtualCell> generateMap()
@@ -321,7 +339,7 @@ public class MapManager : MonoBehaviour {
             VirtualCell currentCell = hexagones[i].GetComponent<VirtualCell>();  // TODO: delete hexagones in the future, temporary variable
             Vector3 position = new Vector3(
                     currentCell.Position.x * horizontal + currentCell.Position.y * shift,
-                    0,
+                    currentCell.Height,
                     -1 * currentCell.Position.y * vertical);
 
             GameObject choosenPrefab = null;

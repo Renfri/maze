@@ -99,7 +99,7 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
         }
     }
 
-    public int Height
+    public float Height
     {
         get
         {
@@ -180,7 +180,7 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
     //private:
     bool isVisited;
     bool isDeadEnd;
-    int height;
+    float height;
     bool isNeededTransition;
     CellType type;
     FieldType typeOfField;
