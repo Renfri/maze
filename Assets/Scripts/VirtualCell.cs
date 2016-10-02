@@ -26,14 +26,14 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
 
     public void Initialize(IntVector2 pos)
     {
-        neighbours = new List<VirtualCell>();
-        isVisited = false;
-        isDeadEnd = false;
-        yCoordinate = -1; // yCoordinate is unassigned
-        isNeededTransition = false;
-        type = CellType.WALL;
-        typeOfField = FieldType.NONE;
-        position = pos;
+        Neighbours = new List<VirtualCell>();
+        IsVisited = false;
+        IsDeadEnd = false;
+        YCoordinate = -1; // yCoordinate is unassigned
+        IsNeededTransition = false;
+        Type = CellType.WALL;
+        TypeOfField = FieldType.NONE;
+        Position = pos;
     }
 
     public Vector2 GetXZCoordinates()
@@ -54,12 +54,12 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
     public List<IntVector2> GetRandomlyPotentialIndirectNeighbours()
     {
         List<IntVector2> list = new List<IntVector2>();
-        list.Add(new IntVector2(position.x + 2, position.y));
-        list.Add(new IntVector2(position.x,     position.y + 2));
-        list.Add(new IntVector2(position.x - 2, position.y + 2));
-        list.Add(new IntVector2(position.x - 2, position.y));
-        list.Add(new IntVector2(position.x,     position.y - 2));
-        list.Add(new IntVector2(position.x + 2, position.y - 2));
+        list.Add(new IntVector2(Position.x + 2, Position.y));
+        list.Add(new IntVector2(Position.x,     Position.y + 2));
+        list.Add(new IntVector2(Position.x - 2, Position.y + 2));
+        list.Add(new IntVector2(Position.x - 2, Position.y));
+        list.Add(new IntVector2(Position.x,     Position.y - 2));
+        list.Add(new IntVector2(Position.x + 2, Position.y - 2));
         List<IntVector2> randomList = new List<IntVector2>();
 
         while(list.Count > 0)
@@ -74,9 +74,9 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
     public List<VirtualCell> GetRandomlyNeighbours()
     {
         List<VirtualCell> list = new List<VirtualCell>();
-        for (int i = 0; i < neighbours.Count; i++)
+        for (int i = 0; i < Neighbours.Count; i++)
         {
-            list.Add(neighbours[i]);
+            list.Add(Neighbours[i]);
         }
         List<VirtualCell> randomList = new List<VirtualCell>();
 
@@ -89,119 +89,23 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
         return randomList;
     }
 
-    public bool IsVisited
-    {
-        get
-        {
-            return isVisited;
-        }
+    public bool IsVisited { get; set; }
 
-        set
-        {
-            isVisited = value;
-        }
-    }
+    public bool IsDeadEnd { get; set; }
 
-    public bool IsDeadEnd
-    {
-        get
-        {
-            return isDeadEnd;
-        }
+    public float YCoordinate { get; set; }
 
-        set
-        {
-            isDeadEnd = value;
-        }
-    }
+    public bool IsNeededTransition { get; set; }
 
-    public float YCoordinate
-    {
-        get
-        {
-            return yCoordinate;
-        }
+    public CellType Type { get; set; }
 
-        set
-        {
-            yCoordinate = value;
-        }
-    }
+    public FieldType TypeOfField { get; set; }
 
-    public bool IsNeededTransition
-    {
-        get
-        {
-            return isNeededTransition;
-        }
+    public IntVector2 Position { get; set; }
 
-        set
-        {
-            isNeededTransition = value;
-        }
-    }
-
-    public CellType Type
-    {
-        get
-        {
-            return type;
-        }
-
-        set
-        {
-            type = value;
-        }
-    }
-
-    public FieldType TypeOfField
-    {
-        get
-        {
-            return typeOfField;
-        }
-
-        set
-        {
-            typeOfField = value;
-        }
-    }
-
-    public IntVector2 Position
-    {
-        get
-        {
-            return position;
-        }
-
-        set
-        {
-            position = value;
-        }
-    }
-
-    public List<VirtualCell> Neighbours
-    {
-        get
-        {
-            return neighbours;
-        }
-
-        set
-        {
-            neighbours = value;
-        }
-    }
+    public List<VirtualCell> Neighbours { get; set; }
 
     //private:
-    bool isVisited;
-    bool isDeadEnd;
-    float yCoordinate;
-    bool isNeededTransition;
-    CellType type;
-    FieldType typeOfField;
-    IntVector2 position;
-    List<VirtualCell> neighbours;
 
     private static readonly float Horizontal = Mathf.Sqrt(3) / 2;
     private static readonly float Vertical = 0.75F;
