@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Assets.Scripts;
 
 public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the future
     //public:
@@ -8,7 +9,7 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
     {
         WALL,
         FIELD
-    };
+    }
 
     public enum FieldType // TODO: change system to more flexible
     {
@@ -28,11 +29,26 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
         neighbours = new List<VirtualCell>();
         isVisited = false;
         isDeadEnd = false;
-        height = -1; // height is unassigned
+        yCoordinate = -1; // yCoordinate is unassigned
         isNeededTransition = false;
         type = CellType.WALL;
         typeOfField = FieldType.NONE;
         position = pos;
+    }
+
+    public Vector2 GetXZCoordinates()
+    {
+        return new Vector2(
+                       Position.x * Horizontal + Position.y * Shift,
+                       -1 * Position.y * Vertical);
+    }
+
+    public Vector3 GetXYZCoordinates()
+    {
+        return new Vector3(
+                       Position.x * Horizontal + Position.y * Shift,
+                       YCoordinate,
+                       - 1 * Position.y * Vertical);
     }
 
     public List<IntVector2> GetRandomlyPotentialIndirectNeighbours()
@@ -99,16 +115,16 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
         }
     }
 
-    public float Height
+    public float YCoordinate
     {
         get
         {
-            return height;
+            return yCoordinate;
         }
 
         set
         {
-            height = value;
+            yCoordinate = value;
         }
     }
 
@@ -180,16 +196,19 @@ public class VirtualCell : MonoBehaviour { // TODO: delete MonoBehaviour in the 
     //private:
     bool isVisited;
     bool isDeadEnd;
-    float height;
+    float yCoordinate;
     bool isNeededTransition;
     CellType type;
     FieldType typeOfField;
     IntVector2 position;
     List<VirtualCell> neighbours;
 
+    private static readonly float Horizontal = Mathf.Sqrt(3) / 2;
+    private static readonly float Vertical = 0.75F;
+    private static readonly float Shift = Horizontal / 2;
 
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start () {
     }
 	
 	// Update is called once per frame

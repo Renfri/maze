@@ -3,10 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using Assets.Scripts;
 
 public class MapManager : MonoBehaviour {
 
     public GameObject[] prefabs;
+    public float[] HeightLevels;
 
     public int size;
     public int randomPointsForEachTheme;
@@ -16,7 +18,7 @@ public class MapManager : MonoBehaviour {
     private List<GameObject> hexagones = new List<GameObject>(); // TODO: delete hexagones in the future, temporary variable
 
 	void Start () {
-        Dictionary<IntVector2, VirtualCell> map = generateMap();
+        var map = generateMap();
         map = CreatePerfectMaze(map);
         map = MakeLoops(map);
         map = SetNeighbourhoodAndDeadEnds(map);
@@ -24,22 +26,6 @@ public class MapManager : MonoBehaviour {
         map = AddHeights(map);
         createScene();
 	}
-
-    private Dictionary<IntVector2, VirtualCell> AddHeights(Dictionary<IntVector2, VirtualCell> map)
-    {
-        foreach (var cell in map)
-        {
-            if(!(cell.Value.TypeOfField == VirtualCell.FieldType.NONE))
-            {
-                cell.Value.Height = (Mathf.PerlinNoise(cell.Key.x * HeightScale, cell.Key.y * HeightScale));
-            }
-            else
-            {
-                cell.Value.Height = 0;
-            }
-        }
-        return map;
-    }
 
     // Creates simple big hexagon from small hexagones
     private Dictionary<IntVector2, VirtualCell> generateMap()
@@ -328,19 +314,21 @@ public class MapManager : MonoBehaviour {
         return map;
     }
 
+    private Dictionary<IntVector2, VirtualCell> AddHeights(Dictionary<IntVector2, VirtualCell> map)
+    {
+        var gen = new HeightGenerator(HeightLevels);
+
+        map = gen.AddHeights(map);
+
+        return map;
+    }
+
     private void createScene()
     {
-        float horizontal = Mathf.Sqrt(3)/2;
-        float vertical = 0.75F;
-        float shift = horizontal / 2;
-
         for (int i = 0; i < hexagones.Count; i++)
         {
             VirtualCell currentCell = hexagones[i].GetComponent<VirtualCell>();  // TODO: delete hexagones in the future, temporary variable
-            Vector3 position = new Vector3(
-                    currentCell.Position.x * horizontal + currentCell.Position.y * shift,
-                    currentCell.Height,
-                    -1 * currentCell.Position.y * vertical);
+            Vector3 position = currentCell.GetXYZCoordinates();
 
             GameObject choosenPrefab = null;
             switch (currentCell.Type)
